@@ -85,14 +85,18 @@ public class UserDAO {
             }
         return list;
     }
-    public void saveMessage(int sender, int receiver, String content) {
-        String sql = "INSERT INTO Messages (SenderID, ReceiverID, Content) VALUES (?, ?, ?)";
+    // Thêm vào server.dao.UserDAO
+    public boolean saveMessage(int senderID, int receiverID, String content) {
+        String sql = "INSERT INTO Messages (SenderID, ReceiverID, Content, TimeSent) VALUES (?, ?, ?, GETDATE())";
         try (Connection conn = DBConnection.getConnection();
             PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setInt(1, sender);
-                ps.setInt(2, receiver);
-                ps.setString(3, content);
-                ps.executeUpdate();
-        } catch (Exception e) { e.printStackTrace(); }
+            ps.setInt(1, senderID);
+            ps.setInt(2, receiverID);
+            ps.setNString(3, content); // Dùng setNString để hỗ trợ tiếng Việt có dấu
+        return ps.executeUpdate() > 0;
+    } catch (SQLException e) {
+        System.err.println("Lỗi saveMessage: " + e.getMessage());
+        return false;
+        }
     }
-}
+}           

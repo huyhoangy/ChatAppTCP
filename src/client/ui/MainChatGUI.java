@@ -14,6 +14,7 @@ public class MainChatGUI extends JFrame {
     private JButton btnSend;
     private JLabel lblTargetName; 
     private client.service.ClientService service;
+    private int selectedFriendID = -1;
 
     public MainChatGUI(User user,client.service.ClientService service) {
         this.currentUser = user;
@@ -126,10 +127,9 @@ public class MainChatGUI extends JFrame {
         item.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
+                setSelectedFriendID(friend.getUserID());
                 lblTargetName.setText(" Đang chat với: " + friend.getFullName());
-                pnlChatContent.removeAll();
-                pnlChatContent.revalidate();
-                pnlChatContent.repaint();
+                
                 try {
                     service.getOut().writeObject("GET_HISTORY|"+ friend.getUserID());
                     service.getOut().flush();
@@ -157,4 +157,8 @@ public class MainChatGUI extends JFrame {
     public JButton getBtnSend() { return btnSend; }
     public JTextField getTxtMessage() { return txtMessage; }
     public JPanel getPnlChatContent() { return pnlChatContent; }
+    public int getSelectedFriendID() { return selectedFriendID; }
+    public void setSelectedFriendID(int id) { this.selectedFriendID = id; }
+    public JLabel getLblTargetName() { return lblTargetName; }
+    
 }

@@ -35,8 +35,12 @@ public class ClientHandler implements Runnable {
                     if (cmd.startsWith("LOGIN")) {
                         handleLogin(cmd);
                     } else if(cmd.startsWith("MSG")){
-                        
-                        broadcastMessage(cmd);
+                        String[] parts = cmd.split("\\|");
+                        int receiverID = Integer.parseInt(parts[1]);
+                        String content = parts[2];
+                        UserDAO dao = new UserDAO();
+                        dao.saveMessage(this.currentUser.getUserID(), receiverID, content);
+                        broadcastMessage(receiverID,content);
                     }else if(cmd.startsWith("GET_HISTORY")){
                         int friendID = Integer.parseInt(cmd.split("\\|")[1]);
                         UserDAO dao = new UserDAO();
@@ -81,19 +85,20 @@ public class ClientHandler implements Runnable {
             if (socket != null) socket.close();
         } catch (IOException e) { e.printStackTrace(); }
     }
-    private void broadcastMessage(String msg) {
-        String[] parts = msg.split("\\|");
-        String content = parts[2];
-    // Duyệt qua tất cả những người đang kết nối vào Server
-        for (ClientHandler handler : ChatServer.clientHandlers) {
-        try {
-            // Gửi tin nhắn cho tất cả mọi người TRỪ bản thân mình gửi
-            if (handler != this) { 
+    // Trong server.core.ClientHandler
+    private void broadcastMessage(int receiverID, String content) {
+    // Duyệt qua tất cả những người đang Online
+        for (ClientHandler handler : server.clientHandlers) {
+        // Gửi cho người nhận (máy B) 
+        // VÀ gửi cho chính người gửi (máy A) để xác nhận
+        if (handler.currentUser.getUserID() == receiverID || handler == this) {
+            try {
+                // Giao thức: RECEIVE_MSG | Tên người gửi | Nội dung
                 handler.out.writeObject("RECEIVE_MSG|" + this.currentUser.getFullName() + "|" + content);
                 handler.out.flush();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+                }
             }
         }
     }
