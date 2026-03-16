@@ -47,6 +47,18 @@ public class ClientHandler implements Runnable {
                         List<model.Message> history = dao.getMessageHistory(this.currentUser.getUserID(), friendID);
                         out.writeObject(history);
                         out.flush();
+                    }else if( cmd.startsWith("REGISTER")){
+                        String[] parts = cmd.split("\\|");
+                        String user = parts[1];
+                        String pass = parts[2];
+                        String name = parts[3];
+                        UserDAO dao = new UserDAO();
+                        if(dao.register(user, pass, name)){
+                            out.writeObject("REG_SUCCESS");
+                        }else{
+                            out.writeObject("REG_FAILED");
+                        }
+                        out.flush();
                     }
                 } 
             }

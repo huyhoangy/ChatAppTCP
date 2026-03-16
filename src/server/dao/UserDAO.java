@@ -99,4 +99,25 @@ public class UserDAO {
         return false;
         }
     }
+    public boolean register(String username, String password,String fullName){
+        String checkSql = "SELECT COUNT(*) FROM Users WHERE Username = ?";
+        String insertSql = "INSERT INTO Users (Username, Password, FullName, Status) VALUES (?, ?, ?, 'Offline')";
+        try(Connection conn =DBConnection.getConnection()){
+            PreparedStatement psCheck = conn.prepareStatement(checkSql);
+            psCheck.setString(1, username);
+            ResultSet rs = psCheck.executeQuery();
+            if(rs.next() && rs.getInt(1) > 0){
+                return false; // Username đã tồn tại
+            }
+            PreparedStatement psInsert = conn.prepareStatement(insertSql);
+            psInsert.setString(1, username);
+            psInsert.setString(2, password);
+            psInsert.setString(3, fullName);
+            return psInsert.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            System.err.println("Lỗi register: " + e.getMessage());
+            return false;
+        }
+    }
 }           
