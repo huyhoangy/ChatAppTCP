@@ -14,6 +14,7 @@ public class ClientService {
     private String host = "localhost";
     private int port = 1234;
     public void connect() throws IOException{
+        close();
         socket = new Socket(host, port);
         out = new ObjectOutputStream(socket.getOutputStream());
         in = new ObjectInputStream(socket.getInputStream());

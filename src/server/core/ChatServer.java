@@ -4,10 +4,11 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class ChatServer {
     private int port;
-    public static List<ClientHandler> clientHandlers = new ArrayList<>();
+    public static List<ClientHandler> clientHandlers = new CopyOnWriteArrayList<>();
     public ChatServer(int port){
         this.port = port;
     }

@@ -63,9 +63,13 @@ public class ClientHandler implements Runnable {
                 } 
             }
         } catch (Exception e) {
-            System.out.println("Mot client da ngat ket noi.");
+            System.out.println("Người dùng " + (currentUser != null ? currentUser.getFullName() : "") + " đã ngắt kết nối.");
+            
+        }finally {
             server.clientHandlers.remove(this);
-        } 
+            closeEverything();
+
+        }
     }
 
     private void handleLogin(String cmd) throws IOException {

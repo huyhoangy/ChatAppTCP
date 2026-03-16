@@ -55,7 +55,7 @@ public class ChatController {
                 }
             }
         } catch (Exception e) {
-            System.out.println("Lỗi nhận dữ liệu: " + e.getMessage());
+            System.out.println("Loi nhan du lieu: " + e.getMessage());
             }
         }).start();
     }

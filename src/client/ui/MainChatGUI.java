@@ -86,6 +86,25 @@ public class MainChatGUI extends JFrame {
         rightPanel.add(chatFooter, BorderLayout.SOUTH);
         add(leftPanel, BorderLayout.WEST);
         add(rightPanel, BorderLayout.CENTER);
+        // phan chua nut dang xuat
+        JPanel leftFooter = new JPanel(new BorderLayout());
+        leftFooter.setBackground(Color.WHITE);
+        leftFooter.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 1, new Color(230, 230, 230)));
+        leftFooter.setPreferredSize(new Dimension(300,60));
+        // nut dang xuat
+        JButton btnLogout = new JButton("Đăng xuất");
+        btnLogout.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        btnLogout.setForeground(new Color(231, 76, 60));
+        btnLogout.setBackground(Color.WHITE);
+        btnLogout.setBorderPainted(false);
+        btnLogout.setFocusPainted(false);
+        btnLogout.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnLogout.setHorizontalAlignment(SwingConstants.LEFT);
+        btnLogout.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));
+        btnLogout.addActionListener(e-> handleLogout());
+        leftFooter.add(btnLogout, BorderLayout.CENTER);
+        leftPanel.add(leftFooter, BorderLayout.SOUTH);
+
     }
 
     public void addMessage(String text, boolean isMe) {
@@ -152,6 +171,27 @@ public class MainChatGUI extends JFrame {
         pnlFriendsList.add(item); 
         pnlFriendsList.revalidate();
         pnlFriendsList.repaint();
+    }
+    private void handleLogout() {
+        int confirm = JOptionPane.showConfirmDialog(this, 
+                "Bạn có chắc chắn muốn đăng xuất không?", 
+                "Xác nhận", JOptionPane.YES_NO_OPTION);
+        
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                if (service != null ) {
+                    service.close(); 
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            LoginGUI loginView = new LoginGUI();
+            client.service.ClientService newService = new client.service.ClientService();
+            new client.controller.LoginController(loginView, newService).init();
+            loginView.setVisible(true);
+            this.dispose(); 
+        }
     }
 
     public JButton getBtnSend() { return btnSend; }
