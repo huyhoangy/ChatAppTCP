@@ -9,6 +9,7 @@ public class Message implements Serializable {
     private int messageID;
     private int senderID;
     private int receiverID;
+    private String senderName;
     private String content;
     private Timestamp timeSent;
     private byte[] fileData; 
@@ -32,6 +33,9 @@ public class Message implements Serializable {
 
     public int getReceiverID() { return receiverID; }
     public void setReceiverID(int receiverID) { this.receiverID = receiverID; }
+
+    public String getSenderName() { return senderName; }
+    public void setSenderName(String senderName) { this.senderName = senderName; }
 
     public String getContent() { return content; }
     public void setContent(String content) { this.content = content; }

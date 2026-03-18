@@ -9,6 +9,7 @@ import client.controller.LoginController;
 import client.ui.component.RoundedPanel;
 import model.User;
 import java.util.List;
+import javax.swing.border.EmptyBorder;
 
 public class MainChatGUI extends JFrame {
     private User currentUser;
@@ -134,26 +135,62 @@ public class MainChatGUI extends JFrame {
     // --- CÁC HÀM HỖ TRỢ GIAO DIỆN ---
 
     public void addMessage(String text, boolean isMe) {
-        JPanel row = new JPanel(new FlowLayout(isMe ? FlowLayout.RIGHT : FlowLayout.LEFT));
-        row.setOpaque(false);
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
+        addMessage(null, text, isMe, false);
+    }
 
-        RoundedPanel bubble = new RoundedPanel(15, isMe ? new Color(106, 43, 226) : new Color(230, 230, 230));
-        JLabel lbl = new JLabel("<html><p style='width: 250px'>" + text + "</p></html>");
-        lbl.setForeground(isMe ? Color.WHITE : Color.BLACK);
-        lbl.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
-        
-        bubble.add(lbl);
-        row.add(bubble);
+    public void addMessage(String senderName, String text, boolean isMe, boolean showSenderName) {
+        JPanel row = new JPanel(new FlowLayout(isMe ? FlowLayout.RIGHT : FlowLayout.LEFT, 12, 2));
+        row.setOpaque(false);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
+
+        JPanel messageBlock = new JPanel();
+        messageBlock.setOpaque(false);
+        messageBlock.setLayout(new BoxLayout(messageBlock, BoxLayout.Y_AXIS));
+        messageBlock.setBorder(new EmptyBorder(0, isMe ? 0 : 6, 0, isMe ? 6 : 0));
+
+        if (showSenderName && !isMe && senderName != null && !senderName.trim().isEmpty()) {
+            JLabel lblName = new JLabel(senderName);
+            lblName.setFont(new Font("Segoe UI", Font.BOLD, 12));
+            lblName.setForeground(new Color(105, 105, 115));
+            lblName.setBorder(new EmptyBorder(0, 8, 4, 0));
+            lblName.setAlignmentX(Component.LEFT_ALIGNMENT);
+            messageBlock.add(lblName);
+        }
+
+        Color myBubble = new Color(106, 43, 226);
+        Color otherBubble = new Color(236, 236, 238);
+        RoundedPanel bubble = new RoundedPanel(20, isMe ? myBubble : otherBubble);
+        bubble.setLayout(new BorderLayout());
+        bubble.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel lbl = new JLabel(toHtmlText(text, 260));
+        lbl.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        lbl.setForeground(isMe ? Color.WHITE : new Color(35, 35, 35));
+        lbl.setBorder(new EmptyBorder(9, 14, 9, 14));
+
+        bubble.add(lbl, BorderLayout.CENTER);
+        messageBlock.add(bubble);
+        row.add(messageBlock);
+
         pnlChatContent.add(row);
+        pnlChatContent.add(Box.createVerticalStrut(4));
         pnlChatContent.revalidate();
         pnlChatContent.repaint();
 
-        // Tự động cuộn xuống cuối
         SwingUtilities.invokeLater(() -> {
-            JScrollBar vertical = ((JScrollPane)pnlChatContent.getParent().getParent()).getVerticalScrollBar();
+            JScrollBar vertical = ((JScrollPane) pnlChatContent.getParent().getParent()).getVerticalScrollBar();
             vertical.setValue(vertical.getMaximum());
         });
+    }
+
+    private String toHtmlText(String text, int width) {
+        if (text == null) return "<html><body style='width:" + width + "px;'></body></html>";
+        String escaped = text
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\n", "<br>");
+        return "<html><body style='width:" + width + "px;'>" + escaped + "</body></html>";
     }
 
     public void addFriendItem(User f) {
@@ -260,8 +297,23 @@ public class MainChatGUI extends JFrame {
     }
 
     private void handleLogout() {
-        if (JOptionPane.showConfirmDialog(this, "Bạn muốn đăng xuất?", "Xác nhận", JOptionPane.YES_NO_OPTION) == 0) {
-            service.close();
+        int opt = JOptionPane.showConfirmDialog(this, "Bạn muốn đăng xuất?", "Xác nhận", JOptionPane.YES_NO_OPTION);
+        if (opt == JOptionPane.YES_OPTION) {
+            try {
+                    service.close();
+                    SwingUtilities.invokeLater(() -> {
+                client.ui.LoginGUI loginUI = new client.ui.LoginGUI();
+                client.service.ClientService newService = new client.service.ClientService();
+                new client.controller.LoginController(loginUI, newService).init();
+                loginUI.setVisible(true);
+            });
+            this.dispose();
+
+            } catch (Exception e) {
+                // TODO: handle exception
+                e.printStackTrace();
+                System.exit(0);
+            }
             new LoginController(new LoginGUI(), new client.service.ClientService()).init();
             dispose();
         }
@@ -282,3 +334,4 @@ public class MainChatGUI extends JFrame {
     public int getSelectedID() { return selectedID; }
     public JLabel getLblTargetName() { return lblTargetName; }
 }
+

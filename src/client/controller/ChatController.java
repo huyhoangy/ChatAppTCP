@@ -99,8 +99,14 @@ public class ChatController {
             List<Message> history = (List<Message>) list;
             SwingUtilities.invokeLater(() -> {
                 view.getPnlChatContent().removeAll();
+                boolean isGroupChat = view.getSelectedID() < 0;
                 for (Message m : history) {
-                    view.addMessage(m.getContent(), m.getSenderID() == currentUser.getUserID());
+                    boolean isMe = m.getSenderID() == currentUser.getUserID();
+                    if (isGroupChat) {
+                        view.addMessage(m.getSenderName(), m.getContent(), isMe, true);
+                    } else {
+                        view.addMessage(m.getContent(), isMe);
+                    }
                 }
                 view.getPnlChatContent().revalidate();
                 view.getPnlChatContent().repaint();
@@ -127,7 +133,7 @@ public class ChatController {
                 String content = p[3];
                 if (view.getSelectedID() == -gID) {
                     boolean isMe = senderName.equals(currentUser.getFullName());
-                    view.addMessage((isMe ? "" : senderName + ": ") + content, isMe);
+                    view.addMessage(senderName, content, isMe, true);
                 }
             }
             // Xử lý tạo nhóm thành công (Hiện ngay lên giao diện)

@@ -185,6 +185,7 @@ public List<Message> getGroupMessageHistory(int groupID) {
             while (rs.next()) {
                 Message m = new Message();
                 m.setSenderID(rs.getInt("SenderID"));
+                m.setSenderName(rs.getNString("FullName"));
                 m.setContent(rs.getNString("Content"));
                 list.add(m);
             }
