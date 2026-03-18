@@ -24,11 +24,11 @@ public class LoginGUI extends JFrame {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         
-        // 1. Panel chính nền tím (GridBagLayout để căn giữa form trắng)
+        //  Panel chính nền tím (GridBagLayout để căn giữa form trắng)
         JPanel mainPanel = new JPanel(new GridBagLayout());
         mainPanel.setBackground(new Color(106, 43, 226));
 
-        // 2. Form đăng nhập trắng, bo góc (Absolute Layout để dùng setBounds)
+        //  Form đăng nhập trắng, bo góc (Absolute Layout để dùng setBounds)
         RoundedPanel form = new RoundedPanel(30, Color.WHITE);
         form.setPreferredSize(new Dimension(350, 480));
         form.setLayout(null);
@@ -67,7 +67,7 @@ public class LoginGUI extends JFrame {
         btnLogin.setCursor(new Cursor(Cursor.HAND_CURSOR));
         form.add(btnLogin);
 
-        // 3. Dòng chữ chuyển sang Đăng ký
+        //  Dòng chữ chuyển sang Đăng ký
         lblRegister = new JLabel("Chưa có tài khoản? Đăng ký ngay!");
         lblRegister.setBounds(40, 360, 270, 25);
         lblRegister.setForeground(new Color(106, 43, 226));
@@ -87,22 +87,19 @@ public class LoginGUI extends JFrame {
             }
             @Override
             public void mouseClicked(MouseEvent e) {
-                // Mở RegisterGUI
                 RegisterGUI regView = new RegisterGUI();
                 client.service.ClientService service = new client.service.ClientService();
                 new RegisterController(regView, service).init();
                 regView.setVisible(true);
-                dispose(); // Đóng cửa sổ đăng nhập
+                dispose(); 
             }
         });
         form.add(lblRegister);
 
-        // Thêm form vào mainPanel và thêm vào JFrame
         mainPanel.add(form);
         add(mainPanel);
     }
 
-    // --- Getters cho Controller sử dụng ---
     public JTextField getTxtUsername() { return txtUsername; }
     public JPasswordField getTxtPassword() { return txtPassword; }
     public JButton getBtnLogin() { return btnLogin; }

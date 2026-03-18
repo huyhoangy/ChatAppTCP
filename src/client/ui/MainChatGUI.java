@@ -1,129 +1,154 @@
 package client.ui;
 
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import javax.swing.*;
+
+import client.controller.LoginController;
 import client.ui.component.RoundedPanel;
 import model.User;
 import java.util.List;
 
 public class MainChatGUI extends JFrame {
     private User currentUser;
-    private JPanel pnlFriendsList;
-    private JPanel pnlChatContent;
-    private JTextField txtMessage;
+    private JPanel pnlFriendsList, pnlChatContent;
+    private JTextField txtMessage, txtSearch;
     private JButton btnSend;
-    private JLabel lblTargetName; 
+    private JLabel lblTargetName;
     private client.service.ClientService service;
-    private int selectedFriendID = -1;
+    private int selectedID = 0; // 0 = chưa chọn, ID dương là User, ID âm là Group (VD: -5 là Group ID 5)
+    private java.util.List<User> allFriends = new java.util.ArrayList<>();
 
-    public MainChatGUI(User user,client.service.ClientService service) {
+    public MainChatGUI(User user, client.service.ClientService service) {
         this.currentUser = user;
         this.service = service;
         initComponents();
     }
 
-    private void initComponents(){
+    private void initComponents() {
         setTitle("Message - " + currentUser.getFullName());
         setSize(1100, 700);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
-        // --- Cột trái: Danh sách bạn bè ---
+        // --- CỘT TRÁI (DANH SÁCH CHAT) ---
         JPanel leftPanel = new JPanel(new BorderLayout());
-        leftPanel.setPreferredSize(new Dimension(300, 700));
+        leftPanel.setPreferredSize(new Dimension(300, 0));
         leftPanel.setBackground(Color.WHITE);
         leftPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(230, 230, 230)));
+
+        // Header trái: Tiêu đề + Nút Tạo nhóm
+        JPanel leftHeader = new JPanel(new BorderLayout(5, 10));
+        leftHeader.setBackground(Color.WHITE);
+        leftHeader.setBorder(BorderFactory.createEmptyBorder(15, 15, 10, 15));
+        
+        JPanel titlePanel = new JPanel(new BorderLayout());
+        titlePanel.setBackground(Color.WHITE);
         
         JLabel lblTitle = new JLabel("Đoạn chat");
-        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        lblTitle.setBorder(BorderFactory.createEmptyBorder(20, 20, 10, 20));
-        leftPanel.add(lblTitle, BorderLayout.NORTH);
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        
+        // Nút Tạo nhóm chat
+        JButton btnCreateGroup = new JButton("+ Nhóm");
+        btnCreateGroup.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btnCreateGroup.setFocusPainted(false);
+        btnCreateGroup.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnCreateGroup.addActionListener(e -> handleCreateGroup());
+        
+        titlePanel.add(lblTitle, BorderLayout.WEST);
+        titlePanel.add(btnCreateGroup, BorderLayout.EAST);
+        
+        txtSearch = new JTextField();
+        txtSearch.setPreferredSize(new Dimension(0, 35));
+        txtSearch.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        
+        leftHeader.add(titlePanel, BorderLayout.NORTH);
+        leftHeader.add(txtSearch, BorderLayout.SOUTH);
 
         pnlFriendsList = new JPanel();
         pnlFriendsList.setLayout(new BoxLayout(pnlFriendsList, BoxLayout.Y_AXIS));
         pnlFriendsList.setBackground(Color.WHITE);
         JScrollPane scrollFriends = new JScrollPane(pnlFriendsList);
         scrollFriends.setBorder(null);
-        leftPanel.add(scrollFriends, BorderLayout.CENTER);
 
-        // --- Vùng chat chính ---
+        // Footer trái: Đăng xuất
+        JPanel leftFooter = new JPanel(new BorderLayout());
+        leftFooter.setPreferredSize(new Dimension(0, 50));
+        leftFooter.setBackground(Color.WHITE);
+        leftFooter.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 1, new Color(230, 230, 230)));
+        JButton btnLogout = new JButton("🚪 Đăng xuất");
+        btnLogout.setForeground(new Color(231, 76, 60));
+        btnLogout.setBorderPainted(false);
+        btnLogout.setContentAreaFilled(false);
+        btnLogout.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnLogout.addActionListener(e -> handleLogout());
+        leftFooter.add(btnLogout);
+
+        leftPanel.add(leftHeader, BorderLayout.NORTH);
+        leftPanel.add(scrollFriends, BorderLayout.CENTER);
+        leftPanel.add(leftFooter, BorderLayout.SOUTH);
+
+        // --- CỘT PHẢI (VÙNG CHAT) ---
         JPanel rightPanel = new JPanel(new BorderLayout());
         
+        // Header chat
         JPanel chatHeader = new JPanel(new BorderLayout());
         chatHeader.setPreferredSize(new Dimension(0, 70));
         chatHeader.setBackground(Color.WHITE);
         chatHeader.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(230, 230, 230)));
-        
-        lblTargetName = new JLabel(" Chọn một người để bắt đầu chat");
+        lblTargetName = new JLabel(" Chọn một người hoặc nhóm để chat");
         lblTargetName.setFont(new Font("Segoe UI", Font.BOLD, 16));
         lblTargetName.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));
         chatHeader.add(lblTargetName, BorderLayout.CENTER);
-        rightPanel.add(chatHeader, BorderLayout.NORTH);
 
+        // Nội dung chat
         pnlChatContent = new JPanel();
         pnlChatContent.setLayout(new BoxLayout(pnlChatContent, BoxLayout.Y_AXIS));
         pnlChatContent.setBackground(new Color(245, 245, 245));
         JScrollPane scrollChat = new JScrollPane(pnlChatContent);
         scrollChat.setBorder(null);
-        rightPanel.add(scrollChat, BorderLayout.CENTER);
 
-        // --- Footer nhập tin nhắn ---
+        // Footer chat: Nhập tin nhắn
         JPanel chatFooter = new JPanel(new BorderLayout(10, 0));
-        chatFooter.setPreferredSize(new Dimension(0, 60));
-        chatFooter.setBackground(Color.WHITE);
         chatFooter.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-        
+        chatFooter.setBackground(Color.WHITE);
         txtMessage = new JTextField();
         txtMessage.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        chatFooter.add(txtMessage, BorderLayout.CENTER);
-
         btnSend = new JButton("Gửi");
         btnSend.setBackground(new Color(106, 43, 226));
         btnSend.setForeground(Color.WHITE);
+        btnSend.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        chatFooter.add(txtMessage, BorderLayout.CENTER);
         chatFooter.add(btnSend, BorderLayout.EAST);
 
+        rightPanel.add(chatHeader, BorderLayout.NORTH);
+        rightPanel.add(scrollChat, BorderLayout.CENTER);
         rightPanel.add(chatFooter, BorderLayout.SOUTH);
+
         add(leftPanel, BorderLayout.WEST);
         add(rightPanel, BorderLayout.CENTER);
-        // phan chua nut dang xuat
-        JPanel leftFooter = new JPanel(new BorderLayout());
-        leftFooter.setBackground(Color.WHITE);
-        leftFooter.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 1, new Color(230, 230, 230)));
-        leftFooter.setPreferredSize(new Dimension(300,60));
-        // nut dang xuat
-        JButton btnLogout = new JButton("Đăng xuất");
-        btnLogout.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        btnLogout.setForeground(new Color(231, 76, 60));
-        btnLogout.setBackground(Color.WHITE);
-        btnLogout.setBorderPainted(false);
-        btnLogout.setFocusPainted(false);
-        btnLogout.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnLogout.setHorizontalAlignment(SwingConstants.LEFT);
-        btnLogout.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));
-        btnLogout.addActionListener(e-> handleLogout());
-        leftFooter.add(btnLogout, BorderLayout.CENTER);
-        leftPanel.add(leftFooter, BorderLayout.SOUTH);
-
     }
+
+    // --- CÁC HÀM HỖ TRỢ GIAO DIỆN ---
 
     public void addMessage(String text, boolean isMe) {
         JPanel row = new JPanel(new FlowLayout(isMe ? FlowLayout.RIGHT : FlowLayout.LEFT));
         row.setOpaque(false);
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100)); // Thêm để tránh bong bóng chat quá cao
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
 
         RoundedPanel bubble = new RoundedPanel(15, isMe ? new Color(106, 43, 226) : new Color(230, 230, 230));
-        JLabel lblText = new JLabel("<html><p style=\"width: 200px\">" + text + "</p></html>");
-        lblText.setForeground(isMe ? Color.WHITE : Color.BLACK);
-        lblText.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
+        JLabel lbl = new JLabel("<html><p style='width: 250px'>" + text + "</p></html>");
+        lbl.setForeground(isMe ? Color.WHITE : Color.BLACK);
+        lbl.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
         
-        bubble.add(lblText);
+        bubble.add(lbl);
         row.add(bubble);
         pnlChatContent.add(row);
-        
-        pnlChatContent.revalidate(); 
+        pnlChatContent.revalidate();
         pnlChatContent.repaint();
-        
+
         // Tự động cuộn xuống cuối
         SwingUtilities.invokeLater(() -> {
             JScrollBar vertical = ((JScrollPane)pnlChatContent.getParent().getParent()).getVerticalScrollBar();
@@ -131,74 +156,129 @@ public class MainChatGUI extends JFrame {
         });
     }
 
-    public void addFriendItem(User friend) {
-        JPanel item = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 15, 10));
-        item.setBackground(java.awt.Color.WHITE);
-        item.setMaximumSize(new java.awt.Dimension(300, 60));
+    public void addFriendItem(User f) {
+        allFriends.add(f);
+        JPanel item = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
+        item.setBackground(Color.WHITE);
+        item.setMaximumSize(new Dimension(300, 60));
         item.setCursor(new Cursor(Cursor.HAND_CURSOR));
         
-        JLabel lblName = new JLabel(friend.getFullName());
-        lblName.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 15));
+        JLabel lblStatus = new JLabel("●");
+        lblStatus.setForeground("Online".equals(f.getStatus()) ? new Color(46, 204, 113) : Color.GRAY);
         
-        item.add(new JLabel("●")); 
-        item.add(lblName);
-
-        item.addMouseListener(new java.awt.event.MouseAdapter() {
+        item.add(lblStatus);
+        item.add(new JLabel(f.getFullName()));
+        
+        item.addMouseListener(new MouseAdapter() {
             @Override
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                setSelectedFriendID(friend.getUserID());
-                lblTargetName.setText(" Đang chat với: " + friend.getFullName());
-                
+            public void mouseClicked(MouseEvent e) {
+                selectedID = f.getUserID(); // ID dương
+                lblTargetName.setText(" Đang chat với: " + f.getFullName());
+                clearChat();
                 try {
-                    service.getOut().writeObject("GET_HISTORY|"+ friend.getUserID());
+                    service.getOut().writeObject("GET_HISTORY|" + f.getUserID());
                     service.getOut().flush();
-                    
-                } catch (Exception e) {
-                    // TODO: handle exception
-                    e.printStackTrace();
-                }
-                
+                } catch (Exception ex) { ex.printStackTrace(); }
             }
-            
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                item.setBackground(new Color(240, 240, 240));
-            }
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                item.setBackground(Color.WHITE);
-            }
+            @Override
+            public void mouseEntered(MouseEvent e) { item.setBackground(new Color(245, 245, 245)); }
+            @Override
+            public void mouseExited(MouseEvent e) { item.setBackground(Color.WHITE); }
         });
+        pnlFriendsList.add(item);
+        pnlFriendsList.revalidate();
+    }
 
-        pnlFriendsList.add(item); 
+    public void addGroupItem(int groupID, String groupName) {
+        JPanel item = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
+        item.setBackground(Color.WHITE);
+        item.setMaximumSize(new Dimension(300, 60));
+        item.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        JLabel lblIcon = new JLabel("👥");
+        item.add(lblIcon);
+        item.add(new JLabel(groupName));
+        
+        item.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                selectedID = -groupID; // ID âm
+                System.out.println("DEBUG: Da chon Group ID = " + selectedID); // Thêm dòng này để kiểm tra
+                lblTargetName.setText(" Nhóm: " + groupName);
+                clearChat();
+                try {
+                    service.getOut().writeObject("GET_GROUP_HISTORY|" + groupID);
+                    service.getOut().flush();
+                } catch (Exception ex) { ex.printStackTrace(); }
+            }
+            @Override
+            public void mouseEntered(MouseEvent e) { item.setBackground(new Color(245, 245, 245)); }
+            @Override
+            public void mouseExited(MouseEvent e) { item.setBackground(Color.WHITE); }
+        });
+        pnlFriendsList.add(item);
         pnlFriendsList.revalidate();
         pnlFriendsList.repaint();
     }
-    private void handleLogout() {
-        int confirm = JOptionPane.showConfirmDialog(this, 
-                "Bạn có chắc chắn muốn đăng xuất không?", 
-                "Xác nhận", JOptionPane.YES_NO_OPTION);
-        
-        if (confirm == JOptionPane.YES_OPTION) {
-            try {
-                if (service != null ) {
-                    service.close(); 
+
+    private void handleCreateGroup() {
+        String groupName = JOptionPane.showInputDialog(this, "Nhập tên nhóm chat mới:", "Tạo nhóm", JOptionPane.QUESTION_MESSAGE);
+        if (groupName == null || groupName.trim().isEmpty()) return;
+        DefaultListModel<User> listModel = new DefaultListModel<>();
+        JList<User> list = new JList<>(allFriends.toArray(new User[0]));
+        list.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        list.setCellRenderer(new DefaultListCellRenderer(){
+            @Override
+            public Component getListCellRendererComponent(JList<?>list,Object value,int index,boolean isSelected, boolean cellHasFocus){
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if(value instanceof User){
+                    setText(((User) value).getFullName());
                 }
+                return this;
+            }
+        });
+        int option = JOptionPane.showConfirmDialog(this, new JScrollPane(list), "Chọn thành viên nhóm", JOptionPane.OK_CANCEL_OPTION);
+        if(option == JOptionPane.OK_OPTION){
+            List<User> selectedUsers = list.getSelectedValuesList();
+            if(selectedUsers.isEmpty()){
+                JOptionPane.showMessageDialog(this, "Vui lòng chọn ít nhất một thành viên!");
+                return;
+            }
+            StringBuilder ids = new StringBuilder();
+            for(User u : selectedUsers){
+                ids.append(u.getUserID()).append(",");
+            }
+            ids.append(currentUser.getUserID());
+            try {
+                service.getOut().writeObject("CREATE_GROUP|"+ groupName.trim()+"|"+ ids.toString());
+                service.getOut().flush();
             } catch (Exception e) {
+                // TODO: handle exception
                 e.printStackTrace();
             }
-
-            LoginGUI loginView = new LoginGUI();
-            client.service.ClientService newService = new client.service.ClientService();
-            new client.controller.LoginController(loginView, newService).init();
-            loginView.setVisible(true);
-            this.dispose(); 
         }
     }
 
+    private void handleLogout() {
+        if (JOptionPane.showConfirmDialog(this, "Bạn muốn đăng xuất?", "Xác nhận", JOptionPane.YES_NO_OPTION) == 0) {
+            service.close();
+            new LoginController(new LoginGUI(), new client.service.ClientService()).init();
+            dispose();
+        }
+    }
+
+    private void clearChat() {
+        pnlChatContent.removeAll();
+        pnlChatContent.revalidate();
+        pnlChatContent.repaint();
+    }
+
+    // Getters
     public JButton getBtnSend() { return btnSend; }
     public JTextField getTxtMessage() { return txtMessage; }
+    public JTextField getTxtSearch() { return txtSearch; }
+    public JPanel getPnlFriendsList() { return pnlFriendsList; }
     public JPanel getPnlChatContent() { return pnlChatContent; }
-    public int getSelectedFriendID() { return selectedFriendID; }
-    public void setSelectedFriendID(int id) { this.selectedFriendID = id; }
+    public int getSelectedID() { return selectedID; }
     public JLabel getLblTargetName() { return lblTargetName; }
-    
 }
